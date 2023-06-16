@@ -32,6 +32,8 @@ wp = Client(conf.wp_url, conf.wp_username, conf.wp_password)
 def create_category(wp, category_name):
     categories = wp.call(GetTerms('category'))
     category_names = [category.name for category in categories]
+    print(category_names)
+    print(category_name)
 
     if category_name not in category_names:
         new_category = WordPressTerm()
@@ -41,7 +43,7 @@ def create_category(wp, category_name):
 
 def publish_post(title, categorys, attachment_id, content):
     for c in categorys:
-        create_category(wp, c)
+        create_category(wp, c.strip())
 
     post = WordPressPost()
     post.title = title
