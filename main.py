@@ -32,8 +32,6 @@ wp = Client(conf.wp_url, conf.wp_username, conf.wp_password)
 def create_category(wp, category_name):
     categories = wp.call(GetTerms('category'))
     category_names = [category.name for category in categories]
-    print(category_names)
-    print(category_name)
 
     if category_name not in category_names:
         new_category = WordPressTerm()
