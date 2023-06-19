@@ -104,26 +104,31 @@ def main():
         values = worksheet.get_values()
         for i in range(len(values)):
             if values[i][5] == '0':
-                # 이미지 파일을 워드프레스 서버에 업로드
-                response = openai.Image.create(
-                    prompt=values[i][4],
-                    n=1,
-                    size="512x512"
-                )
-                image_url = response['data'][0]['url']
-                image_data = requests.get(image_url).content
-                data = {
-                        'name': 'image_name.jpg',
-                        'type': 'image/jpeg',  # mimetype
-                        'bits': xmlrpc_client.Binary(image_data)
-                    }
-                response = wp.call(media.UploadFile(data))
-                attachment_id = response['id']
+                try:
+                    # 이미지 파일을 워드프레스 서버에 업로드
+                    response = openai.Image.create(
+                        prompt=values[i][4],
+                        n=1,
+                        size="512x512"
+                    )
+                    image_url = response['data'][0]['url']
+                    image_data = requests.get(image_url).content
+                    data = {
+                            'name': 'image_name.jpg',
+                            'type': 'image/jpeg',  # mimetype
+                            'bits': xmlrpc_client.Binary(image_data)
+                        }
+                    response = wp.call(media.UploadFile(data))
+                    attachment_id = response['id']
 
-                categorys = values[i][2].split(',')
-                publish_post(title=values[i][1], categorys=categorys, attachment_id=attachment_id ,content=values[i][3])
-                worksheet.update_acell('F' + str(i + 1), '1')
-                time.sleep(3600 * 3)
+                    categorys = values[i][2].split(',')
+                    publish_post(title=values[i][1], categorys=categorys, attachment_id=attachment_id ,content=values[i][3])
+                    worksheet.update_acell('F' + str(i + 1), '1')
+                    time.sleep(3600 * 3)
+                except Exception as e:
+                    print(e)
+                    worksheet.update_acell('F' + str(i + 1), '2')
+                    time.sleep(60)
 
         column_data = worksheet.col_values(1)
         column_data = column_data[1:]
@@ -138,16 +143,19 @@ def main():
         time.sleep(5)
 
         for dish in dishes:
-            recipe_prompt = get_recipe_prompt(dish)
-            response = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {conf.openai_key}"},
-                json={"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": recipe_prompt}]},
-            )
-            recipes_str = response.json()["choices"][0]["message"]["content"]
-            recipes_str = recipes_str.replace("\n", "")
-            recipes = recipes_str.split('%%%')
-            worksheet.append_row([recipes[0], recipes[1], recipes[2], recipes[4], recipes[3], 0])
+            try:
+                recipe_prompt = get_recipe_prompt(dish)
+                response = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {conf.openai_key}"},
+                    json={"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": recipe_prompt}]},
+                )
+                recipes_str = response.json()["choices"][0]["message"]["content"]
+                recipes_str = recipes_str.replace("\n", "")
+                recipes = recipes_str.split('%%%')
+                worksheet.append_row([recipes[0], recipes[1], recipes[2], recipes[4], recipes[3], 0])
+            except Exception as e:
+                print(e)
             time.sleep(5)
 
         time.sleep(180)
